@@ -2,6 +2,9 @@ name: Fix Build (force rebuild)
 on:
   workflow_dispatch:
 
+env:
+  PYTHON_VERSION: '3.12.8'
+
 jobs:
   Windows-build:
     permissions:
@@ -23,58 +26,86 @@ jobs:
           path: 'MoviePilot'
           fetch-depth: 2
 
-      - name: Init Python 3.12.8
+      - name: Init Python ${{ env.PYTHON_VERSION }} (build-time only)
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12.8'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
 
-      - name: Install dependent packages
+      - name: Download embeddable Python + install dependencies
         id: INSTALL_PACKAGES
+        shell: powershell
         run: |
+          $embedUrl = "https://www.python.org/ftp/python/$env:PYTHON_VERSION/python-$env:PYTHON_VERSION-embed-amd64.zip"
+          Invoke-WebRequest $embedUrl -OutFile embed.zip
+          New-Item -ItemType Directory Python3.11 | Out-Null
+          Expand-Archive embed.zip -DestinationPath Python3.11
+          Remove-Item embed.zip
+
+          $pthFile = (Get-Item "Python3.11\python*._pth").FullName
+          (Get-Content $pthFile) -replace '^#import site', 'import site' | Set-Content $pthFile
+
+          Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile Python3.11\get-pip.py
+          & .\Python3.11\python.exe .\Python3.11\get-pip.py --no-warn-script-location
+          Remove-Item Python3.11\get-pip.py
+
           cd MoviePilot
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
           $hash_version=(git log -1 --pretty=format:"%h")
           $GIT_LOG=(git log -1 --oneline)
           echo "KEYM=$GIT_LOG" >> $env:GITHUB_OUTPUT
           echo "HASH_VERSION=$hash_version" >> $env:GITHUB_ENV
-          cd app/helper
+          cd app\helper
           Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v2/sites.cp312-win_amd64.pyd" -OutFile "sites.cp312-win_amd64.pyd"
           Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v2/user.sites.v2.bin" -OutFile "user.sites.v2.bin"
-          cd ../plugins/
+          cd ..\plugins\
           Invoke-WebRequest -Uri "https://github.com/jxxghp/MoviePilot-Plugins/archive/refs/heads/main.zip" -OutFile "MoviePilot-Plugins-main.zip"
           Expand-Archive -Path "MoviePilot-Plugins-main.zip" -DestinationPath "MoviePilot-Plugins-main"
           Move-Item -Path "MoviePilot-Plugins-main/MoviePilot-Plugins-main/plugins.v2/*" -Destination . -Force
           Remove-Item "clashruleprovider" -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item -Path "MoviePilot-Plugins-main.zip"
           Remove-Item -Path "MoviePilot-Plugins-main" -Recurse -Force
-          Get-ChildItem -Path . -Recurse -Filter "requirements.txt" | ForEach-Object { pip install -r $_ }
+          cd ..\..\..
+
+          $python = (Resolve-Path ".\Python3.11\python.exe").Path
+          & $python -m pip install --no-warn-script-location -r MoviePilot\requirements.txt
+          Get-ChildItem -Path MoviePilot\app\plugins -Recurse -Filter "requirements.txt" | ForEach-Object {
+            & $python -m pip install --no-warn-script-location -r $_.FullName
+          }
 
       - name: Download MoviePilot Frontend
+        shell: powershell
         run: |
           $FRONTEND_VERSION = (Get-Content "./MoviePilot/version.py" | Select-String "FRONTEND_VERSION" | ForEach-Object { $_.ToString().Split('=')[1] }).Trim() -replace "'", "" -replace '"', ""
           $APP_VERSION = (Get-Content "./MoviePilot/version.py" | Select-String "APP_VERSION" | ForEach-Object { $_.ToString().Split('=')[1] }).Trim() -replace "'", "" -replace '"', ""
-          mkdir MoviePilot-Frontend
+          New-Item -ItemType Directory MoviePilot-Frontend | Out-Null
           cd MoviePilot-Frontend
           Invoke-WebRequest -URI "https://github.com/jxxghp/MoviePilot-Frontend/releases/download/$FRONTEND_VERSION/dist.zip" -OutFile dist.zip
           Expand-Archive dist.zip -DestinationPath .
           Move-Item -Path .\dist\* -Destination . -Force
           Remove-Item -Path "dist.zip"
           Remove-Item -Path "dist" -Recurse
+          cd ..
           $tagName = $APP_VERSION.Substring(1)
           echo "FIRST_VERSION=$tagName" >> $env:GITHUB_ENV
           echo "LATEST_VERSION=$tagName.$env:HASH_VERSION" >> $env:GITHUB_ENV
 
-      - name: Make Python package
+      - name: Slim down payload
+        shell: powershell
         run: |
-          $python_dir=$(python -c "import os; print(os.path.dirname(os.__file__))")
-          $python_root_dir=$python_dir.Substring(0, $python_dir.Length - 4)
-          mkdir Python3.11
-          cd Python3.11
-          cp -r $python_root_dir/* .
+          Get-ChildItem MoviePilot-Frontend -Recurse -Filter "*.map" -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+          $sp = "Python3.11\Lib\site-packages"
+          if (Test-Path $sp) {
+            Get-ChildItem $sp -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+              Where-Object { $_.Name -in @('tests','test','__pycache__','docs','examples') } |
+              Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+            Get-ChildItem $sp -Recurse -Include *.pyi -Force -ErrorAction SilentlyContinue |
+              Remove-Item -Force -ErrorAction SilentlyContinue
+          }
+          Get-ChildItem Python3.11 -Recurse -Filter __pycache__ -Directory -Force -ErrorAction SilentlyContinue |
+            Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
       - name: Compile Inno Setup Script
+        shell: powershell
         run: |
           Invoke-WebRequest https://jrsoftware.org/download.php/is.exe?site=1 -OutFile is.exe
           Start-Process is.exe -ArgumentList "/VERYSILENT", "/NORETART", "/SP-","/SUPPRESSMSGBOXES","/DIR=C:\Users\runneradmin\AppData\Local\Temp\inno" -NoNewWindow -Wait
@@ -82,6 +113,7 @@ jobs:
           C:\Users\runneradmin\AppData\Local\Temp\inno\iscc "/DMyAppVersion=$env:LATEST_VERSION" .\Windows-MoviePilot\build\build.iss
 
       - name: Use current time
+        shell: powershell
         run: |
           $shanghaiTime = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), [System.TimeZoneInfo]::FindSystemTimeZoneById("China Standard Time"))
           echo "SHANGHAI_TIMEZONE=$($shanghaiTime.ToString('yyyyMMddHHmmss'))" >> $env:GITHUB_ENV

@@ -53,8 +53,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-; Server source — excluding user config (preserve on upgrade)
-Source: "{#MySourceRoot}MoviePilot\*"; DestDir: "{app}\MoviePilot"; Excludes: "\config\*,\.git\*,\.git"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Server source — excluding user config (preserve on upgrade) and all non-runtime assets
+Source: "{#MySourceRoot}MoviePilot\*"; DestDir: "{app}\MoviePilot"; \
+    Excludes: "\config\*,\.git\*,\.git,\.github\*,\docker\*,\docs\*,\tests\*,\scripts\*,\skills\*,\moviepilot\*,README*.md,LICENSE,safety.policy.yml,setup.py,frozen.spec,*.pyi,*.pyc"; \
+    Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Ship a default config ONLY on first install (don't overwrite user edits)
 Source: "{#MySourceRoot}MoviePilot\config\*"; DestDir: "{app}\MoviePilot\config"; Flags: onlyifdoesntexist recursesubdirs createallsubdirs uninsneveruninstall

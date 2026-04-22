@@ -77,21 +77,17 @@ jobs:
           cd app\helper
           Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v2/sites.cp312-win_amd64.pyd" -OutFile "sites.cp312-win_amd64.pyd"
           Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v2/user.sites.v2.bin" -OutFile "user.sites.v2.bin"
-          cd ..\plugins\
-          Invoke-WebRequest -Uri "https://github.com/jxxghp/MoviePilot-Plugins/archive/refs/heads/main.zip" -OutFile "MoviePilot-Plugins-main.zip"
-          Expand-Archive -Path "MoviePilot-Plugins-main.zip" -DestinationPath "MoviePilot-Plugins-main"
-          Move-Item -Path "MoviePilot-Plugins-main/MoviePilot-Plugins-main/plugins.v2/*" -Destination . -Force
-          Remove-Item "clashruleprovider" -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item -Path "MoviePilot-Plugins-main.zip"
-          Remove-Item -Path "MoviePilot-Plugins-main" -Recurse -Force
           cd ..\..\..
 
-          # --- 5. 安装依赖到 embeddable 的 site-packages ---
+          # --- 5. 只装 MoviePilot 核心依赖 ---
+          # 不预装任何插件 (及其依赖): MoviePilot 在 Web UI 启用插件时
+          # 会自己从插件市场下载代码 + pip install requirements.txt
+          # (见 app/startup/plugins_initializer.sync_plugins +
+          #  app/core/plugin.install_plugin_missing_dependencies)
+          # 这样可以把 400+ MB 的插件依赖 (playwright, spacy, googleapi...) 留给
+          # 运行时按需安装, 显著减小安装包体积
           $python = (Resolve-Path ".\Python3.11\python.exe").Path
           & $python -m pip install --no-warn-script-location -r MoviePilot\requirements.txt
-          Get-ChildItem -Path MoviePilot\app\plugins -Recurse -Filter "requirements.txt" | ForEach-Object {
-            & $python -m pip install --no-warn-script-location -r $_.FullName
-          }
 
       - name: Download MoviePilot Frontend
         shell: powershell

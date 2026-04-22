@@ -22,6 +22,21 @@ iscc /DMyAppVersion=2.6.7.abcdef build.iss
 # 输出：exe\MoviePilot-V2-Setup-<version>.exe
 ```
 
+## 插件策略
+
+**安装包不预装任何插件**。MoviePilot 原版会在 workflow 里把 `MoviePilot-Plugins/plugins.v2/*`
+全部打包 + `pip install` 每个插件的 `requirements.txt`，这是 400+ MB 体积的主因
+(playwright 96MB, googleapiclient 89MB, spacy 86MB, jieba 41MB 等)。
+
+MoviePilot 本身已经有完整的**运行时插件管理**：
+
+- `app/startup/plugins_initializer.sync_plugins()` 启动时检查
+- `PluginManager.install_plugin_missing_dependencies()` pip install 缺失依赖
+- `PluginHelper.install()` 从插件市场下载代码 + pip install
+
+用户在 Web UI 点"安装插件"时，MoviePilot 会自动从插件市场下载代码并 pip install
+依赖。**我们不需要在 CI 里预装**，只为了用户还没启用的插件占硬盘。
+
 ## 与原版 `developer-wlj/Inno-Setup-MoviePilot` 的区别
 
 原版打包脚本是私仓，此目录是从 0 重写的公开版本。相对原版简化：

@@ -63,10 +63,12 @@ jobs:
           $pthFile = (Get-Item "Python3.11\python*._pth").FullName
           (Get-Content $pthFile) -replace '^#import site', 'import site' | Set-Content $pthFile
 
-          # --- 3. 引导 pip ---
+          # --- 3. 引导 pip + 构建工具 (embeddable 默认不带 pip/setuptools/wheel) ---
+          # 某些 sdist-only 的依赖需要 setuptools.build_meta 才能从源码构建
           Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile Python3.11\get-pip.py
           & .\Python3.11\python.exe .\Python3.11\get-pip.py --no-warn-script-location
           Remove-Item Python3.11\get-pip.py
+          & .\Python3.11\python.exe -m pip install --no-warn-script-location --upgrade setuptools wheel
 
           # --- 4. 拉取 MoviePilot-Resources 和版本信息 ---
           cd MoviePilot

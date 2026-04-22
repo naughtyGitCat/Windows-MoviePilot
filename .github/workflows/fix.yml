@@ -48,6 +48,8 @@ jobs:
           Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile Python3.11\get-pip.py
           & .\Python3.11\python.exe .\Python3.11\get-pip.py --no-warn-script-location
           Remove-Item Python3.11\get-pip.py
+          # embeddable 默认不带 setuptools/wheel, sdist 依赖需要它们从源码构建
+          & .\Python3.11\python.exe -m pip install --no-warn-script-location --upgrade setuptools wheel
 
           cd MoviePilot
           $hash_version=(git log -1 --pretty=format:"%h")

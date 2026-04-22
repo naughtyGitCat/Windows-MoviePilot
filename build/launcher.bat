@@ -9,16 +9,11 @@ rem No Nginx: the FastAPI backend serves the frontend directly
 rem at http://127.0.0.1:3111
 rem ------------------------------------------------------------
 
-rem Path length check (Windows MAX_PATH)
+rem Path length check only. 空格是可以的 (FastAPI/Python 能正确处理 spaces-in-path)
 setlocal enabledelayedexpansion
 set "_dir=%cd%"
-if not "!_dir!"=="!_dir:~,260!" (
-    echo [ERROR] 安装路径超过 260 字符，请缩短后重试。
-    pause
-    exit /b 1
-)
-if not "!_dir: =!"=="!_dir!" (
-    echo [ERROR] 安装路径包含空格，请移至无空格目录后重试。
+if not "!_dir!"=="!_dir:~,240!" (
+    echo [ERROR] 安装路径超过 240 字符，请缩短后重试。
     pause
     exit /b 1
 )

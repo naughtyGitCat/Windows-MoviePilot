@@ -59,9 +59,25 @@ jobs:
           Expand-Archive embed.zip -DestinationPath Python3.11
           Remove-Item embed.zip
 
-          # --- 2. 启用 site-packages (默认 ._pth 中 `import site` 被注释掉) ---
+          # --- 2. 启用 site-packages + Lib (默认 ._pth 中 `import site` 被注释, 且无 Lib) ---
           $pthFile = (Get-Item "Python3.11\python*._pth").FullName
-          (Get-Content $pthFile) -replace '^#import site', 'import site' | Set-Content $pthFile
+          $pth = Get-Content $pthFile
+          $pth = $pth -replace '^#import site', 'import site'
+          if ($pth -notcontains 'Lib') {
+            $pth = $pth -replace '^\.$', ".`r`nLib"
+          }
+          Set-Content -Path $pthFile -Value $pth -Encoding ASCII
+
+          # --- 2b. 补回 embeddable 默认排除的 stdlib 模块 (venv/ensurepip 被部分插件用到, 例如 mcpserver) ---
+          $builderLib = (& python -c "import sys, os; print(os.path.join(os.path.dirname(sys.executable), 'Lib'))").Trim()
+          New-Item -ItemType Directory "Python3.11\Lib" -Force | Out-Null
+          foreach ($mod in @('venv', 'ensurepip')) {
+            $src = Join-Path $builderLib $mod
+            if (Test-Path $src) {
+              Copy-Item -Path $src -Destination "Python3.11\Lib\$mod" -Recurse -Force
+              Write-Host "+ added stdlib module: $mod"
+            }
+          }
 
           # --- 3. 引导 pip + 构建工具 (embeddable 默认不带 pip/setuptools/wheel) ---
           # 某些 sdist-only 的依赖需要 setuptools.build_meta 才能从源码构建

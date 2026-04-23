@@ -43,7 +43,22 @@ jobs:
           Remove-Item embed.zip
 
           $pthFile = (Get-Item "Python3.11\python*._pth").FullName
-          (Get-Content $pthFile) -replace '^#import site', 'import site' | Set-Content $pthFile
+          $pth = Get-Content $pthFile
+          $pth = $pth -replace '^#import site', 'import site'
+          if ($pth -notcontains 'Lib') {
+            $pth = $pth -replace '^\.$', ".`r`nLib"
+          }
+          Set-Content -Path $pthFile -Value $pth -Encoding ASCII
+
+          # 补回 embeddable 默认排除的 stdlib 模块 (mcpserver 等插件需要)
+          $builderLib = (& python -c "import sys, os; print(os.path.join(os.path.dirname(sys.executable), 'Lib'))").Trim()
+          New-Item -ItemType Directory "Python3.11\Lib" -Force | Out-Null
+          foreach ($mod in @('venv', 'ensurepip')) {
+            $src = Join-Path $builderLib $mod
+            if (Test-Path $src) {
+              Copy-Item -Path $src -Destination "Python3.11\Lib\$mod" -Recurse -Force
+            }
+          }
 
           Invoke-WebRequest "https://bootstrap.pypa.io/get-pip.py" -OutFile Python3.11\get-pip.py
           & .\Python3.11\python.exe .\Python3.11\get-pip.py --no-warn-script-location

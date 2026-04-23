@@ -6,10 +6,13 @@
 
 | 文件 | 作用 |
 |---|---|
-| `build.iss`     | Inno Setup 主脚本，定义安装/卸载逻辑 |
-| `launcher.bat`  | 安装后桌面图标调用的入口，启动 FastAPI 后端（端口 3111） |
-| `restart.bat`   | `SystemUtils.restart()` 触发的重启工具（`RebotMP.bat` 的替身） |
-| `ChineseSimplified.isl` | 可选：中文向导语言文件。放入此目录后在 `build.iss` 取消 `chinesesimp` 注释 |
+| `build.iss`              | Inno Setup 主脚本，定义安装/卸载逻辑 |
+| `launcher.bat`           | 不装 service 时桌面图标调用的入口 (前台运行 FastAPI 后端) |
+| `restart.bat`            | `SystemUtils.restart()` 触发的重启工具（`RebotMP.bat` 的替身） |
+| `nssm.exe`               | NSSM v2.24 (公共领域)，把 python.exe 包装成 Windows service |
+| `service-install.ps1`    | 安装 + 启动 service (Inno Setup [Run] 调用，也可手动跑) |
+| `service-uninstall.ps1`  | 停止 + 删除 service ([UninstallRun] 调用) |
+| `ChineseSimplified.isl`  | 可选：中文向导语言文件。放入此目录后在 `build.iss` 取消 `chinesesimp` 注释 |
 
 ## 本地编译（需要 Windows + Inno Setup 6）
 
@@ -47,3 +50,26 @@ MoviePilot 本身已经有完整的**运行时插件管理**：
 - **单入口 `MoviePilot.bat`**（原版是 `[启动]MoviePilot.bat` + `windows_start.cmd` 两层）
 - **重启工具改用 `RebotMP.bat`**（后端代码已兼容 `.bat` 和 `.exe`）
 - **向导默认英文**（app UI 仍为中文）
+- **支持安装为 Windows Service**（NSSM 内嵌，向导里勾选即可）
+
+## 服务模式 (默认)
+
+安装向导第一步会让你选 "Install as Windows service"（默认勾选）。勾选后:
+
+- 注册一个名为 `MoviePilot-V2` 的 Windows 服务，开机自启
+- 进程崩溃自动重启 (5 秒延迟)
+- stdout/stderr 写到 `{app}\service-logs\`，10MB 自动轮转
+- 默认以 LocalSystem 身份运行 (看不到映射的网络盘 → 如需，用 services.msc 改"登录"账户)
+
+不勾选则安装包同样可用，桌面双击 `MoviePilot.bat` 前台启动。
+
+服务管理：
+```powershell
+net start MoviePilot-V2
+net stop MoviePilot-V2
+Restart-Service MoviePilot-V2
+```
+
+升级安装时：[Code] PrepareToInstall 会先 `net stop` 服务释放文件锁，再覆盖；新版装完后 [Run] 重新装+启动 service，配置/数据库零丢失。
+
+卸载时：[UninstallRun] 自动停止并删除 service。

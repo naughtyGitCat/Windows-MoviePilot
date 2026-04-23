@@ -13,20 +13,34 @@
 ## 安装
 
 1. 下载 [Releases](https://github.com/naughtyGitCat/Windows-MoviePilot/releases) 页最新 `.exe`
-2. **安装路径要求**（和原版一致）：
+2. **安装路径要求**：
    - 系统必须是 64 位
    - 系统必须有 Visual C++ Redistributable（[下载](https://aka.ms/vs/17/release/VC_redist.x64.exe)）
-   - 安装目录的完整路径**不能超过 260 字符**
-   - 安装目录**不能包含空格**
-   - 不建议装到 `C:\Program Files*` 下（需管理员才能写，可能看不到用户挂载盘）
-3. 双击桌面 `MoviePilot-V2` 图标启动
+   - 安装目录的完整路径**不能超过 240 字符**
+   - 路径**可以包含空格**（FastAPI 模式与原版 Nginx 模式不同，已支持）
+3. 安装向导第一步会问 **"Install as Windows service"**（默认勾选）：
+   - **勾选**：注册为后台服务 `MoviePilot-V2`，开机自启，进程崩溃自动重启，**推荐**
+   - **不勾选**：每次手动双击桌面 `MoviePilot-V2` 图标启动（前台运行，关掉 cmd 窗口就停了）
 4. 浏览器访问 `http://127.0.0.1:3111`
    - 用户名：`admin`
    - 密码：首次启动随机生成，写入到 `config\logs\` 日志中
 
+### Service 管理（如选了 service 模式）
+
+```powershell
+net start MoviePilot-V2     # 启动
+net stop  MoviePilot-V2     # 停止
+Restart-Service MoviePilot-V2
+Get-Service MoviePilot-V2   # 查看状态
+```
+
+服务日志在 `{安装目录}\service-logs\stdout.log`（10MB 自动轮转）。
+
+**Service 默认以 LocalSystem 身份跑** —— 看不到映射的网络盘符。需要的话，`services.msc` → MoviePilot V2 → 属性 → "登录" → 选 "此账户" 改成你的用户名 + 密码。
+
 ## 升级
 
-直接下载新版 `.exe` 覆盖安装即可。**以下数据会保留**：
+直接下载新版 `.exe` 覆盖安装即可。安装器会**自动停掉运行中的 service**（避免文件锁），覆盖完毕后**自动重启 service**。**以下数据会保留**：
 
 - 用户配置 `app.env`（TMDB key、下载器凭证、认证信息等）
 - 分类规则 `category.yaml`（即使你改过）
@@ -54,7 +68,7 @@
 
 ## 卸载
 
-用控制面板或开始菜单的 `Uninstall MoviePilot-V2`。默认**保留 `config\` 目录**（含你的数据库和设置），重装或迁移时可直接恢复。如果要彻底清除，手动删除安装目录。
+用控制面板或开始菜单的 `Uninstall MoviePilot-V2`。卸载器会自动停止并删除 `MoviePilot-V2` service。默认**保留 `config\` 目录**（含你的数据库和设置），重装或迁移时可直接恢复。如果要彻底清除，手动删除安装目录。
 
 ## 疑难
 

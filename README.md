@@ -21,7 +21,7 @@
 3. 安装向导第一步会问 **"Install as Windows service"**（默认勾选）：
    - **勾选**：注册为后台服务 `MoviePilot-V2`，开机自启，进程崩溃自动重启，**推荐**
    - **不勾选**：每次手动双击桌面 `MoviePilot-V2` 图标启动（前台运行，关掉 cmd 窗口就停了）
-4. 浏览器访问 `http://127.0.0.1:3111`
+4. 浏览器访问 `http://127.0.0.1:3000`
    - 用户名：`admin`
    - 密码：首次启动随机生成，写入到 `config\logs\` 日志中
 
@@ -94,9 +94,9 @@ Windows 把映射的网络盘符绑定到用户会话。如果 MoviePilot 以管
 
 | 端口 | 用途 |
 |---|---|
-| **3111** | 后端 API + 前端 UI（单端口，FastAPI + StaticFiles） |
+| **3000** | 后端 API + 前端 UI（单端口，FastAPI + StaticFiles） |
 
-原版的 `3000` (Nginx) / `3333` (Nginx 前端) 端口本版本**不再使用**。
+对齐上游 jxxghp Docker 镜像的前端 NGINX_PORT。原版 developer-wlj v2 的 `3333` (Nginx 前端) / `3111` (后端 API) 本版本**不再使用**。
 
 ## 相关仓库
 

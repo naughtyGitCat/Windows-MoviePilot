@@ -31,8 +31,8 @@ Start-Sleep 3
 Write-Host "Removing service '$ServiceName'..."
 & $nssm remove $ServiceName confirm 2>&1 | Out-Null
 
-# Kill any orphan python that might still be holding port 3111
-Get-NetTCPConnection -State Listen -LocalPort 3111 -ErrorAction SilentlyContinue | ForEach-Object {
+# Kill any orphan python that might still be holding port 3000 / 3111 (legacy)
+Get-NetTCPConnection -State Listen -LocalPort 3000,3111 -ErrorAction SilentlyContinue | ForEach-Object {
     Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
 }
 

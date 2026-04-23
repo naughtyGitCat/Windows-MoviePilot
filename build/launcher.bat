@@ -6,7 +6,7 @@ cd /d "%~dp0"
 rem ------------------------------------------------------------
 rem MoviePilot-V2 launcher (FastAPI StaticFiles edition)
 rem No Nginx: the FastAPI backend serves the frontend directly
-rem at http://127.0.0.1:3111
+rem at http://127.0.0.1:3000
 rem ------------------------------------------------------------
 
 rem Path length check only. 空格是可以的 (FastAPI/Python 能正确处理 spaces-in-path)
@@ -32,7 +32,7 @@ if not exist "%~dp0Python3.11\python.exe" (
 )
 
 cd MoviePilot
-echo 启动 MoviePilot-V2 后端 ^(端口 3111^)...
-start "" "http://127.0.0.1:3111"
+echo 启动 MoviePilot-V2 后端 ^(端口 3000^)...
+start "" "http://127.0.0.1:3000"
 "..\Python3.11\python.exe" app\main.py
 pause

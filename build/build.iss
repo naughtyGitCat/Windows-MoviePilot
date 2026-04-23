@@ -134,9 +134,10 @@ begin
     Sleep(3000);
   end;
 
-  { Also kill any orphan python listening on 3111 (non-service install). }
+  { Also kill any orphan python listening on 3000 / 3111 (3111 is the legacy port
+    pre-2.10.x, kept here so upgrades from old fork installs cleanly free port). }
   Exec('powershell.exe',
-       '-NoProfile -Command "Get-NetTCPConnection -State Listen -LocalPort 3111 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"',
+       '-NoProfile -Command "Get-NetTCPConnection -State Listen -LocalPort 3000,3111 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }"',
        '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
   Sleep(1000);
 end;

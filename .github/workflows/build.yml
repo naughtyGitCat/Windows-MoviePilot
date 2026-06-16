@@ -107,7 +107,10 @@ jobs:
           # 这样可以把 400+ MB 的插件依赖 (playwright, spacy, googleapi...) 留给
           # 运行时按需安装, 显著减小安装包体积
           $python = (Resolve-Path ".\Python3.11\python.exe").Path
-          & $python -m pip install --no-warn-script-location -r MoviePilot\requirements.txt
+          # --no-build-isolation: embeddable Python 的 venv 构建隔离环境装了 setuptools
+          # 却 import 不到 setuptools.build_meta（embeddable venv 老毛病），导致 sdist-only
+          # 依赖（如 anitopy）从源码构建时失败。跳过隔离，直接用上面第 3 步装的 setuptools/wheel。
+          & $python -m pip install --no-warn-script-location --no-build-isolation -r MoviePilot\requirements.txt
 
       - name: Download MoviePilot Frontend
         shell: powershell

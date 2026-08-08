@@ -166,10 +166,10 @@ jobs:
       - name: Compile Inno Setup Script
         shell: powershell
         run: |
-          Invoke-WebRequest https://jrsoftware.org/download.php/is.exe?site=1 -OutFile is.exe
-          Start-Process is.exe -ArgumentList "/VERYSILENT", "/NORETART", "/SP-","/SUPPRESSMSGBOXES","/DIR=C:\Users\runneradmin\AppData\Local\Temp\inno" -NoNewWindow -Wait
-          Copy-Item -Path ".\Windows-MoviePilot\build\ChineseSimplified.isl" -Destination "C:\Users\runneradmin\AppData\Local\Temp\inno\Languages" -ErrorAction SilentlyContinue
-          C:\Users\runneradmin\AppData\Local\Temp\inno\iscc "/DMyAppVersion=$env:LATEST_VERSION" .\Windows-MoviePilot\build\build.iss
+          choco install innosetup -y
+          $innoDir = "C:\Program Files (x86)\Inno Setup 6"
+          Copy-Item -Path ".\Windows-MoviePilot\build\ChineseSimplified.isl" -Destination "$innoDir\Languages" -ErrorAction SilentlyContinue
+          & "$innoDir\ISCC.exe" "/DMyAppVersion=$env:LATEST_VERSION" .\Windows-MoviePilot\build\build.iss
 
       - name: Use current time
         shell: powershell

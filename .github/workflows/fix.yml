@@ -116,8 +116,11 @@ jobs:
       - name: Compile Inno Setup Script
         shell: powershell
         run: |
-          Invoke-WebRequest https://jrsoftware.org/download.php/is.exe?site=1 -OutFile is.exe
-          Start-Process is.exe -ArgumentList "/VERYSILENT", "/NORETART", "/SP-","/SUPPRESSMSGBOXES","/DIR=C:\Users\runneradmin\AppData\Local\Temp\inno" -NoNewWindow -Wait
+          $innoUrl = "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/innosetup-6.7.3.exe"
+          Invoke-WebRequest $innoUrl -OutFile is.exe
+          $len = (Get-Item is.exe).Length
+          if ($len -lt 1MB) { throw "Inno Setup installer too small ($len bytes); download failed" }
+          Start-Process is.exe -ArgumentList "/VERYSILENT", "/NORESTART", "/SP-","/SUPPRESSMSGBOXES","/DIR=C:\Users\runneradmin\AppData\Local\Temp\inno" -NoNewWindow -Wait
           Copy-Item -Path ".\Windows-MoviePilot\build\ChineseSimplified.isl" -Destination "C:\Users\runneradmin\AppData\Local\Temp\inno\Languages" -ErrorAction SilentlyContinue
           C:\Users\runneradmin\AppData\Local\Temp\inno\iscc "/DMyAppVersion=$env:LATEST_VERSION" .\Windows-MoviePilot\build\build.iss
 

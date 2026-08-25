@@ -23,6 +23,7 @@ rem Tell MoviePilot to serve the frontend itself
 set "MOVIEPILOT_SERVE_FRONTEND=true"
 set "FRONTEND_PATH=%~dp0MoviePilot-Frontend"
 set "PYTHONUNBUFFERED=1"
+set "PORT=3000"
 
 rem Launch
 if not exist "%~dp0Python3.11\python.exe" (

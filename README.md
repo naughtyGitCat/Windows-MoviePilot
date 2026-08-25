@@ -6,7 +6,8 @@
 - **去掉便携版 Git**：不走 git pull 在线更新，升级统一走安装包重装
 - **Python embeddable 分发**：替代完整 Python 安装，体积大幅缩减
 - **不预装插件**：插件按需从 Web UI 的插件市场在线安装（MoviePilot 本身就支持）
-- **后端代码开源**：对应 MoviePilot fork 在 [naughtyGitCat/MoviePilot@v2-static](https://github.com/naughtyGitCat/MoviePilot/tree/v2-static)，Inno Setup 打包脚本在 [`build/`](./build/) 目录公开
+- **后端代码开源**：对应 MoviePilot fork 在 [naughtyGitCat/MoviePilot@v3-static](https://github.com/naughtyGitCat/MoviePilot/tree/v3-static)，Inno Setup 打包脚本在 [`build/`](./build/) 目录公开
+- **Python 3.14 embed**：目录名仍为 `Python3.11`（保持安装路径/升级覆盖不变），实际运行时是 CPython 3.14.7
 
 预计安装包大小从原版的 ~1GB 降至 **~150-200MB**。
 
@@ -59,6 +60,8 @@ Get-Service MoviePilot-V2   # 查看状态
 - 数据库 schema 自动迁移（MoviePilot 内建 Alembic）
 - 已安装插件检测到依赖变动时会自动 pip install
 
+⚠️ **v2 → v3**：上游标明 V2 不会自动升级、部分插件可能不兼容。安装器会保留 `config/` 和 `user.db`，但插件启用失败时需要在 Web UI 里重装或关掉。不要改用 developer-wlj 的 `MoviePilot-V3.exe` 面板（那条线还没可下载的安装包，也和本 fork 的 NSSM 服务不是同一套）。
+
 ### 对比原版
 
 原版 README 说：
@@ -103,7 +106,7 @@ Windows 把映射的网络盘符绑定到用户会话。如果 MoviePilot 以管
 | 仓库 | 内容 |
 |---|---|
 | [naughtyGitCat/Windows-MoviePilot](https://github.com/naughtyGitCat/Windows-MoviePilot) | 本仓库（CI + Inno Setup 打包脚本） |
-| [naughtyGitCat/MoviePilot@v2-static](https://github.com/naughtyGitCat/MoviePilot/tree/v2-static) | 后端代码 fork，含 FastAPI StaticFiles 补丁 |
+| [naughtyGitCat/MoviePilot@v3-static](https://github.com/naughtyGitCat/MoviePilot/tree/v3-static) | 后端代码 fork（跟随上游 v3），含 FastAPI StaticFiles 补丁 |
 | [jxxghp/MoviePilot](https://github.com/jxxghp/MoviePilot) | 上游原版 MoviePilot |
 | [developer-wlj/Windows-MoviePilot](https://github.com/developer-wlj/Windows-MoviePilot) | 本 fork 的来源 |
 

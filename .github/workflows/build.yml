@@ -5,7 +5,7 @@ on:
     - cron: '0 0/4 * * *'
 
 env:
-  PYTHON_VERSION: '3.12.8'
+  PYTHON_VERSION: '3.14.7'
 
 jobs:
   Windows-build:
@@ -16,8 +16,8 @@ jobs:
     steps:
       - name: 版本对比
         run: |
-          $head = (Invoke-WebRequest -Uri https://api.github.com/repos/naughtyGitCat/MoviePilot/git/refs/heads/v2-static | ConvertFrom-Json).object.sha
-          echo "naughtyGitCat/MoviePilot@v2-static: $head"
+          $head = (Invoke-WebRequest -Uri https://api.github.com/repos/naughtyGitCat/MoviePilot/git/refs/heads/v3-static | ConvertFrom-Json).object.sha
+          echo "naughtyGitCat/MoviePilot@v3-static: $head"
           try {
             $latest = (Invoke-WebRequest -Uri https://api.github.com/repos/naughtyGitCat/Windows-MoviePilot/releases/latest | ConvertFrom-Json).tag_name
           } catch { $latest = "" }
@@ -37,7 +37,7 @@ jobs:
       - name: pull server code
         uses: actions/checkout@v4
         with:
-          ref: v2-static
+          ref: v3-static
           repository: naughtyGitCat/MoviePilot
           path: 'MoviePilot'
           fetch-depth: 2
@@ -94,23 +94,25 @@ jobs:
           $GIT_LOG=(git log -1 --oneline)
           echo "KEYM=$GIT_LOG" >> $env:GITHUB_OUTPUT
           echo "HASH_VERSION=$hash_version" >> $env:GITHUB_ENV
-          cd app\helper
-          Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v2/sites.cp312-win_amd64.pyd" -OutFile "sites.cp312-win_amd64.pyd"
-          Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v2/user.sites.v2.bin" -OutFile "user.sites.v2.bin"
-          cd ..\..\..
+          New-Item -ItemType Directory -Force app\application\site | Out-Null
+          cd app\application\site
+          Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v3/sites.cp314-win_amd64.pyd" -OutFile "sites.cp314-win_amd64.pyd"
+          Invoke-WebRequest -URI "https://raw.githubusercontent.com/jxxghp/MoviePilot-Resources/main/resources.v3/user.sites.v3.bin" -OutFile "user.sites.v3.bin"
+          cd ..\..\..\..
 
           # --- 5. 只装 MoviePilot 核心依赖 ---
+          # v3 用 pyproject.toml (requires-python >=3.14)，没有 requirements.txt。
           # 不预装任何插件 (及其依赖): MoviePilot 在 Web UI 启用插件时
-          # 会自己从插件市场下载代码 + pip install requirements.txt
-          # (见 app/startup/plugins_initializer.sync_plugins +
-          #  app/core/plugin.install_plugin_missing_dependencies)
+          # 会自己从插件市场下载代码 + pip install
           # 这样可以把 400+ MB 的插件依赖 (playwright, spacy, googleapi...) 留给
           # 运行时按需安装, 显著减小安装包体积
           $python = (Resolve-Path ".\Python3.11\python.exe").Path
           # --no-build-isolation: embeddable Python 的 venv 构建隔离环境装了 setuptools
           # 却 import 不到 setuptools.build_meta（embeddable venv 老毛病），导致 sdist-only
           # 依赖（如 anitopy）从源码构建时失败。跳过隔离，直接用上面第 3 步装的 setuptools/wheel。
-          & $python -m pip install --no-warn-script-location --no-build-isolation -r MoviePilot\requirements.txt
+          & $python -m pip install --no-warn-script-location --no-build-isolation .\MoviePilot
+          # uv dependency-group runtime-standard: lxml/bcrypt 等，pip 对 PEP 735 group 支持不稳
+          & $python -m pip install --no-warn-script-location --no-build-isolation "Brotli==1.2.0" "bcrypt~=4.3.0" "lxml~=6.1.2" "psycopg2-binary~=2.9.12" "zhconv-rs~=0.4.1"
 
       - name: Download MoviePilot Frontend
         shell: powershell

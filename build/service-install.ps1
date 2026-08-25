@@ -41,7 +41,7 @@ $stderrLog = Join-Path $logDir "stderr.log"
 Write-Host "Installing service '$ServiceName'..."
 & $nssm install $ServiceName $python "app\main.py"
 & $nssm set $ServiceName AppDirectory $mpDir
-& $nssm set $ServiceName AppEnvironmentExtra "MOVIEPILOT_SERVE_FRONTEND=true" "FRONTEND_PATH=$frontend" "PYTHONUNBUFFERED=1"
+& $nssm set $ServiceName AppEnvironmentExtra "MOVIEPILOT_SERVE_FRONTEND=true" "FRONTEND_PATH=$frontend" "PYTHONUNBUFFERED=1" "PORT=3000"
 & $nssm set $ServiceName Start SERVICE_AUTO_START
 & $nssm set $ServiceName AppStdout $stdoutLog
 & $nssm set $ServiceName AppStderr $stderrLog
